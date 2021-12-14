@@ -1,5 +1,6 @@
-> add keynames
-> add eventlisteners to keys 
+> add period logic
+> add parse logic
+> Run operations and total
 > add disabled property to functions not yet created
 > format the +/- symbol
 > Make screen text size responsive to number length
