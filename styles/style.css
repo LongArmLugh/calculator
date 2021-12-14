@@ -87,5 +87,5 @@
 }
 
 .row:nth-child(5) .btn:nth-child(1) {
-    flex-grow: 2;
+    flex-grow: 2.02;
 }

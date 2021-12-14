@@ -21,6 +21,29 @@ function operate(operation, a, b) {
     operation(a, b);
 }
 
+// const screenOut = document.getElementById('screenTxt');
+
+// Create an object:
+const view = {
+    screen: null,
+    output: null,
+    update: function(output) {
+        this.output = output;
+        this.screen.textContent = this.output;
+    },
+    reset: function() {
+        this.output = null;
+        this.screen.textContent = this.output;
+    }
+}
+
+view.screen = document.getElementById('screenTxt');
+
+
+
+
+
+
 // let a = prompt('a');
 // let operation = prompt('operation');
 // let b = prompt('b');

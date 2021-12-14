@@ -1,8 +1,9 @@
-> convert all div btns to buttons and adjust css accordingly
+> add keynames
+> add eventlisteners to keys 
 > add disabled property to functions not yet created
 > format the +/- symbol
 > Make screen text size responsive to number length
-> make to fields in screen
+> make two fields in screen
     use space between
-> turn calculator into a movable created
+> turn calculator into a movable card
 > background?
