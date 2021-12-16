@@ -33,31 +33,175 @@ const view = {
         this.screen.textContent = this.output;
     }
 }
-view.screen = document.getElementById('screenTxt');
 
-const operator = {
-    // Operator object
-    atTotal: false,
-    isActive: false,
-    list: null,
-    type: null,
+const operations = {
+    // >Requires model obj and view obj
+    // Flags
+    isExpression: false,
+    atNumber: false,
+    hasOperator: false,
     hasPeriod: false,
-    activate: function() {
-        if (this.isActive === false) {
-            this.isActive = true;
+    leadingZero: false,
+    atTotal: false,
+    operators: [
+        // List should be rewritten to be made programatically
+        {
+            type: '+',
+            permission: false,
+            setPermission: function() {
+                if(operations.atNumber === true) {
+                    this.permission = true;
+                }
+            },
+            use: function() {
+                console.log('+ used');
+            },
+            addInput: function(btn) {
+                model.inputs.push(btn);
+                view.update(model.inputs.join(''));
+            }
+        },
+        {
+            type: '-',
+            permission: false,
+            setPermission: function() {
+                if(operations.atNumber === true) {
+                    this.permission = true;
+                }
+            },
+            use: function() {
+                console.log('= used');
+            },
+            addInput: function(btn) {
+                model.inputs.push(btn);
+                view.update(model.inputs.join(''));
+            }
+        },
+        {
+            type: 'x',
+            permission: false,
+            setPermission: function() {
+                if(operations.atNumber === true) {
+                    this.permission = true;
+                }
+            },
+            use: function() {
+                console.log('+ used');
+            },
+            addInput: function(btn) {
+                model.inputs.push(btn);
+                view.update(model.inputs.join(''));
+            }
+        },
+        {
+            type: '/',
+            permission: false,
+            setPermission: function() {
+                if(operations.atNumber === true) {
+                    this.permission = true;
+                }
+            },
+            use: function() {
+                console.log('+ used');
+            },
+            addInput: function(btn) {
+                model.inputs.push(btn);
+                view.update(model.inputs.join(''));
+            }
+        },
+        {
+            type: '=',
+            permission: true,
+            setPermission: function() {
+                this.permission = true;
+            },
+            use: function() {
+                console.log('+ used');
+            },
+            addInput: function(btn) {
+                model.inputs.push(btn);
+                view.update(model.inputs.join(''));
+            }
+        },
+        {
+            type: 'c',
+            permission: true,
+            setPermission: function() {
+                this.permission = true;
+            },
+            use: function() {
+                operations.reset();
+                operations.list.splice(0, operations.list.length);
+            },
+            addInput: function(btn) {
+                model.reset();
+                view.update(model.inputs.join(''));
+            }
+        },
+        {
+            type: '.',
+            permission: true,
+            setPermission: function() {
+                this.permission = true;
+            },
+            use: function() {
+                console.log('+ used');
+            },
+            addInput: function(btn) {
+                model.inputs.push(btn);
+                view.update(model.inputs.join(''));
+            }
+        },
+        {
+            type: '%',
+            permission: false,
+            setPermission: function() {
+                this.permission = true;
+            },
+            use: function() {
+                console.log('+ used');
+            },
+            addInput: function(btn) {
+                model.inputs.push(btn);
+                view.update(model.inputs.join(''));
+            }
+        },
+        {
+            type: "#",
+            permission: false,
+            setPermission: function() {
+                this.permission = true;
+            },
+            use: function() {
+                console.log('+ used');
+            },
+            addInput: function(btn) {
+                model.inputs.push(btn);
+                view.update(model.inputs.join(''));
+            }
+        },
+    ],
+    isNumber: function(char) {
+        return /^[0-9]$/.test(char);
+    },
+    reset: function() {
+        this.isExpression = false;
+        this.atNumber = false;
+        this.hasOperator = false;
+        this.hasPeriod = false;
+        this.leadingZero = false;
+        this.atTotal = false;
+    },
+    operatorPress: function() {
+        this.isExpression = false;
+    }, 
+    numberPress: function() {
+        if (!this.atNumber) {
+            this.atNumber = true;
         }
     },
-    press: function() {
-        if (this.type === '=') {
-            this.atTotal = true;
-            this.list.splice(0, this.list.length);
-            this.list.push('total');
-        } else if (this.isActive === false) {
-            this.list.push(this.type);
-            this.activate();
-        } 
-    },
 }
+
 // Input handling
 // perhaps turn into an object that can detect state
 // operators and period should toggle state to disable
@@ -73,58 +217,43 @@ const model = {
     },
 }
 
+view.screen = document.getElementById('screenTxt');
+operations.list = model.inputs;
 
-operator.list = model.inputs;
-
+// >addNumberEvent
 const addNumberEvent = function() {
-    if (operator.atTotal === true) {
-        operator.atTotal = false;
+    if (operations.atTotal === true) {
+        operations.atTotal = false;
         model.reset();
         view.reset();
     }
     const btn = this.textContent;
-    operator.isActive = false;
-    model.inputs.push(btn);
-    view.update(model.inputs.join(''));
+    if (btn === '0') {
+        // TODO
+    } else {
+        operations.numberPress();
+        model.inputs.push(btn);
+        view.update(model.inputs.join(''));
+    }  
 };
 
+// >addOperatorEvent
+// Till not clear on accessing objects 
+// so instead of using a variable for refference I called 
+// it directly each time.
 const addOperatorEvent = function() {
-    const btn = this.textContent;  
-    switch (btn) { 
-        case 'c':
-            model.inputs.splice(0, model.inputs.length);
-            view.reset();
-            break;
-        case '+/-':
-            break;
-        case '%':
-            break;
-        case '/':
-            operator.type = '+';
-            operator.press();
-            break;
-        case 'x':
-            operator.type = '+';
-            operator.press();
-            break;
-        case '-':
-            operator.type = '+';
-            operator.press();
-            break;
-        case '+':
-            operator.type = '+';
-            operator.press();
-            break;
-        case '.':
-            operator.type = '+';
-            operator.press();
-            break;
-        case '=':
-            operator.type = '=';
-            operator.press();
-            break;
+    const self = this.textContent;
+    // console.log(`${item.textContent}`);
+    const index = operations.operators.findIndex(o => o.type === self);
+    
+    //console.log(operations.operators[index]);
+    operations.operators[index].setPermission();
+    if (operations.operators[index].permission) {
+        operations.operators[index].addInput(self);
+        operations.operators[index].use();
+        operations.operators[index].permission = false;
+        operations.atNumber = false;
     }
-    view.update(model.inputs.join(''));
 }
 
 const btnList = Array.from(document.querySelectorAll('.btn:not(.operator)'));
@@ -135,7 +264,9 @@ btnList.forEach(item => {
 operatorList.forEach(item => {
     item.addEventListener('click', addOperatorEvent);
 });
-
+// operatorList.forEach(item => {
+//     item.addEventListener('click', console.log(item.textContent));
+// });
 
 
 
