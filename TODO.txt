@@ -1,3 +1,4 @@
+> update operators list 
 > add period logic
 > add parse logic
 > Run operations and total

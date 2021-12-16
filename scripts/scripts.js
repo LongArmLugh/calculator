@@ -34,9 +34,14 @@ const view = {
     }
 }
 
+// Probably should have made a universal permissions function with all the checks 
+// to be called by each operation instead of managing it in each onbject in the list
+// going to each is tedious and confusing
+
 const operations = {
     // >Requires model obj and view obj
     // Flags
+    // hasLeadZero: true;
     isExpression: false,
     atNumber: false,
     hasOperator: false,
@@ -44,7 +49,7 @@ const operations = {
     leadingZero: false,
     atTotal: false,
     operators: [
-        // List should be rewritten to be made programatically
+        // List should probably be made programatically
         {
             type: '+',
             permission: false,
@@ -54,6 +59,8 @@ const operations = {
                 }
             },
             use: function() {
+                operations.hasPeriod = false;
+                operations.isExpression = false;
                 console.log('+ used');
             },
             addInput: function(btn) {
@@ -70,7 +77,9 @@ const operations = {
                 }
             },
             use: function() {
-                console.log('= used');
+                operations.hasPeriod = false;
+                operations.isExpression = false;
+                console.log('- used');
             },
             addInput: function(btn) {
                 model.inputs.push(btn);
@@ -86,7 +95,9 @@ const operations = {
                 }
             },
             use: function() {
-                console.log('+ used');
+                operations.hasPeriod = false;
+                operations.isExpression = false;
+                console.log('x used');
             },
             addInput: function(btn) {
                 model.inputs.push(btn);
@@ -102,7 +113,9 @@ const operations = {
                 }
             },
             use: function() {
-                console.log('+ used');
+                operations.hasPeriod = false;
+                operations.isExpression = false;
+                console.log('/ used');
             },
             addInput: function(btn) {
                 model.inputs.push(btn);
@@ -113,10 +126,14 @@ const operations = {
             type: '=',
             permission: true,
             setPermission: function() {
-                this.permission = true;
+                if (operations.isExpression === true) {
+                    this.permission = true;
+                }
             },
             use: function() {
-                console.log('+ used');
+                operations.hasPeriod = false;
+                operations.isExpression = false;
+                console.log('= used');
             },
             addInput: function(btn) {
                 model.inputs.push(btn);
@@ -142,9 +159,13 @@ const operations = {
             type: '.',
             permission: true,
             setPermission: function() {
-                this.permission = true;
+                if (operations.hasPeriod === true) {
+                    this.permission = false;
+                }
             },
             use: function() {
+                operations.atNumber = true;
+                operations.hasPeriod = true;
                 console.log('+ used');
             },
             addInput: function(btn) {
@@ -153,12 +174,17 @@ const operations = {
             }
         },
         {
+            // Future feature
             type: '%',
             permission: false,
             setPermission: function() {
-                this.permission = true;
+                if(operations.atNumber === true) {
+                    // this.permission = true;
+                }
             },
             use: function() {
+                operations.hasPeriod = false;
+                operations.isExpression = false;
                 console.log('+ used');
             },
             addInput: function(btn) {
@@ -167,12 +193,17 @@ const operations = {
             }
         },
         {
+            // Future feature
             type: "#",
             permission: false,
             setPermission: function() {
-                this.permission = true;
+                if(operations.atNumber === true) {
+                    // this.permission = true;
+                }
             },
             use: function() {
+                operations.hasPeriod = false;
+                operations.isExpression = false;
                 console.log('+ used');
             },
             addInput: function(btn) {
@@ -185,11 +216,12 @@ const operations = {
         return /^[0-9]$/.test(char);
     },
     reset: function() {
+        // this.hasLeadZero = true;
         this.isExpression = false;
         this.atNumber = false;
         this.hasOperator = false;
         this.hasPeriod = false;
-        this.leadingZero = false;
+        // this.leadingZero = false;
         this.atTotal = false;
     },
     operatorPress: function() {
@@ -202,10 +234,6 @@ const operations = {
     },
 }
 
-// Input handling
-// perhaps turn into an object that can detect state
-// operators and period should toggle state to disable
-// numbers should toggle state to enable operators.
 const model = {
     // Model Object
     inputs: [],
@@ -220,16 +248,32 @@ const model = {
 view.screen = document.getElementById('screenTxt');
 operations.list = model.inputs;
 
+const numberEventFlags = {
+    hasLeadZero: false,
+}
 // >addNumberEvent
+//check atNumber istead
+// make period trigger atNumber
 const addNumberEvent = function() {
     if (operations.atTotal === true) {
         operations.atTotal = false;
         model.reset();
         view.reset();
+        // add total to screen
     }
     const btn = this.textContent;
     if (btn === '0') {
-        // TODO
+        if (operations.hasPeriod === true) {
+            operations.numberPress();
+            model.inputs.push(btn);
+            view.update(model.inputs.join(''));
+        }
+        if (operations.atNumber === true) {
+            operations.numberPress();
+            model.inputs.push(btn);
+            view.update(model.inputs.join(''));
+        }
+        // Zero does nothing if above conditions are false
     } else {
         operations.numberPress();
         model.inputs.push(btn);
@@ -252,7 +296,9 @@ const addOperatorEvent = function() {
         operations.operators[index].addInput(self);
         operations.operators[index].use();
         operations.operators[index].permission = false;
-        operations.atNumber = false;
+        if (operations.operators[index].type !== '.' ) {
+            operations.atNumber = false;
+        }
     }
 }
 
@@ -264,26 +310,7 @@ btnList.forEach(item => {
 operatorList.forEach(item => {
     item.addEventListener('click', addOperatorEvent);
 });
-// operatorList.forEach(item => {
-//     item.addEventListener('click', console.log(item.textContent));
-// });
 
 
 
 
-
-// let a = prompt('a');
-// let operation = prompt('operation');
-// let b = prompt('b');
-
-// if (operation === '+') {
-//     alert(add(a, b));
-// } else if (operation === '-') {
-//     alert(subtract(a, b));
-// } else if (operation === 'x' || operation === 'X') {
-//     alert(multiply(a, b));
-// } else if (operation === '/'){
-//     alert(divide(a, b));
-// } else {
-//     alert('INVALID OPERATOR')
-// }
