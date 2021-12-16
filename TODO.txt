@@ -1,11 +1,1 @@
-> update operators list 
-> add period logic
-> add parse logic
-> Run operations and total
-> add disabled property to functions not yet created
-> format the +/- symbol
-> Make screen text size responsive to number length
-> make two fields in screen
-    use space between
-> turn calculator into a movable card
-> background?
+> refactor
