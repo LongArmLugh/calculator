@@ -1,82 +1,96 @@
 function load() {
-    // On page load
-    // TODO
-// >addNumberEvent
-//check atNumber istead
-// make period trigger atNumber
-const numberPressEvent = function() {
-    if (operations.atTotal === true) {
-        operations.atTotal = false;
-        model.reset();
-        view.reset();
-        // add total to screen
-    }
-    const btn = this.textContent;
-    if (btn === '0') {
-        if (operations.hasPeriod === true) {
-            operations.numberPress();
-            model.inputs.push(btn);
-            view.update(model.inputs.join(''));
+    // let phrase = ['f', 'u', 'c', 'k'];
+    // console.log(phrase.join(''));
+
+    const numberPressEvent = function() {
+        const btn = this.textContent;
+        // console.log(btn);
+        if (btn === '0') {
+            zedIn.press();
+        } else {
+           numIn.press(btn); 
         }
-        if (operations.atNumber === true) {
-            operations.numberPress();
-            model.inputs.push(btn);
-            view.update(model.inputs.join(''));
-        }
-        // Zero does nothing if above conditions are false
-    } else {
-        operations.numberPress();
-        model.inputs.push(btn);
-        view.update(model.inputs.join(''));
-    }  
-};
+    };
 
     const operatorPressEvent = function() {
-        const self = this.textContent;
-        // console.log(`${item.textContent}`);
-        const index = operations.operators.findIndex(o => o.type === self);
-        
-        //console.log(operations.operators[index]);
-        operations.operators[index].setPermission();
-        if (operations.operators[index].permission) {
-            operations.operators[index].addInput(self);
-            operations.operators[index].use();
-            operations.operators[index].permission = false;
-            if (operations.operators[index].type !== '.' ) {
-                operations.atNumber = false;
-            }
+        const btn = this.textContent;
+        if (btn === 'c') {
+            clear.press();
         }
+        opsIn.press(btn);
+        console.log(btn);
     }
 
+    view.screen = document.getElementById('screenTxt');
+    view.update(data.formStr());
 
-view.screen = document.getElementById('screenTxt');
-operations.list = model.inputs;
+    const btnList = Array.from(document.querySelectorAll('.btn:not(.operator)'));
+    const operatorList = Array.from(document.querySelectorAll('.operator'));
 
-
-const btnList = Array.from(document.querySelectorAll('.btn:not(.operator)'));
-const operatorList = Array.from(document.querySelectorAll('.operator'));
-btnList.forEach(item => {
-    item.addEventListener('click', addNumberEvent);
-});
-operatorList.forEach(item => {
-    item.addEventListener('click', addOperatorEvent);
-});
+    btnList.forEach( item => {
+        item.addEventListener('click', numberPressEvent);
+    });
+    operatorList.forEach(item => {
+        item.addEventListener('click', operatorPressEvent);
+    });
 }
 
 const state = {
     // Stores state and flags
     // reset()
     // Start, Int, Ops, Expression
+    expression: false,
     hasPeriod: false,
-    state: 'start',
-    controller: function(input) {
-        // Called by keypresses
-        // TODO
+    state: 'Start',
+    updateState: function(newState) {
+        switch(this.state) {
+            case 'Start':
+                // Only Integers and period -> Int
+                console.log(`start triggered`);
+                zedIn.enable = true;
+                opsIn.enable = true;
+                this.state = newState;
+                break;
+            case 'Int':
+                // Everything enabled, period has exceptions -> Ops
+                if (newState === 'Ops') {
+                    zedIn.enable = false;
+                    opsIn.enable = false;
+                }
+                this.state = newState;
+            break;
+            case 'Ops':
+                // Only Natural numbers available -> Expression
+                this.expression = true;
+                zedIn.enable = true;
+                opsIn.enable = true;
+                total.enable = true;
+                this.state = newState;
+                break;
+            case 'Expression':
+                // Similar to Int but allows total and triggers a total with opsIn 
+                // -> Int OR Start(with Total) 
+                if (newState === 'Ops') {
+                    this.expression = false;
+                    zedIn.enable = false;
+                    opsIn.enable = false;
+                    total.enable = false;
+                }
+                if (newState === 'Start') {
+                    this.reset();
+                }
+                this.state = newState;
+                break;
+        }
     },
     reset: function() {
+        this.expression = false;
         this.hasPeriod = false;
-        this.state = 'start';
+        this.state = 'Start';
+        data.inputs = ['0'];
+        data.total = 0;
     } 
+    // numEvent: function() 
 };
 
 const data = {
@@ -86,10 +100,17 @@ const data = {
     // data
     // total
     // reset()
-    total: '0',
-    inputs: [this.total],
-    addOps: function(input) {
-        this.inputs.push(` ${input} `);
+    total: 0,
+    inputs: ['0'],
+    // inputsStr: 'meow',
+    formStr: function() {
+        return this.inputs.join('');
+    },
+    addNumber: function(numIn) {
+        this.inputs.push(numIn);
+    },
+    addOps: function(opsIn) {
+        this.inputs.push(` ${opsIn} `);
     },
     reset: function() {
         this.inputs.splice(0, this.inputs.length);
@@ -103,8 +124,9 @@ const view = {
     // View Object
     screen: null, // set by load()
     output: null, // usually set to data.inputs, no assumptions
-    update: function(output) {
-        this.output = output; // makes no assumptions on output
+    update: function(inputStr) {
+        // makes no assumptions on output
+        this.output = inputStr;
         this.screen.textContent = this.output;
     },
     reset: function() {
@@ -147,59 +169,59 @@ const numIn = {
     // updates state
     // model differently BIG TODO!!!
     type: '', // set on assignment
-    setType: function(element) {
-        this.type = element.textContent;
+    enable: true,
+    setType: function(btn) {
+        this.type = btn;
     },
-    permission: true,
-    // set according to state
-    setPermission: function() {
-        if(operations.atNumber === true) {
-            this.permission = true;
+    press: function(btn) {
+        if (state.state === 'Start') {
+            data.reset();
         }
-    },
-    // combine to one function
-    use: function() {
-        operations.hasPeriod = false;
-        operations.isExpression = false;
-        console.log('+ used');
-    },
-    addInput: function(btn) {
-        model.inputs.push(btn);
-        view.update(model.inputs.join(''));
+        if (this.enable === true) {
+            this.setType(btn);
+            data.addNumber(btn);
+            view.update(data.inputs.join(''));
+            if (state.state === 'Start') {
+                state.updateState('Int');
+            } 
+            if (state.state === 'Ops') {
+                state.updateState('Expression');
+            }   
+        }
     }
 };
 
-const opsIn = {
+const opsIn = { // Operation In
     // triggers calculation if state == expression
     // updates data
     // updates view
     // updates state
     type: '', // set on assignment
-    permission: false,
-    setType: function(element) {
-        this.type = element.textContent;
+    enable: false,
+    setType: function(btn) {
+        this.type = btn;
     },
-    setPermission: function() {
-        if(operations.atNumber === true) {
-            this.permission = true;
+    press: function() {
+        this.setType(btn);
+        if (state.state === 'Expression') {
+            // TODO
         }
-    },
-    use: function() {
-        operations.hasPeriod = false;
-        operations.isExpression = false;
-        console.log('/ used');
-    },
-    addInput: function(btn) {
-        model.inputs.push(btn);
-        view.update(model.inputs.join(''));
+        if (this.enable === true) {
+            data.addOps(this.type);
+            view.update(data.formStr());
+        } 
     }
 };
 
 const zedIn = {
-    // if state == int
-    //      updates data 
-    //      updates view
-    //      updates state
+    type: '0',
+    enable: false,
+    press: function() {
+        if (this.enable === true) {
+            data.addNumber(this.type);
+            view.update(data.inputs.join(''));
+        }
+    },
     // TODO
 };
 
@@ -209,21 +231,13 @@ const total = {
 };
 
 const clear = {
-    // resets
-    //      data
-    //      view
-    //      state
+    // resets all
     type: 'c',
-    permission: true,
     // combine into one
-    use: function() {
+    press: function() {
         state.reset();
-        data.list.splice(0, data.list.length);
-        data.total = '0';
-    },
-    addInput: function(btn) {
-        model.reset();
-        view.update(model.inputs.join(''));
+        zedIn.enable = false; // Should have been handled by state.reset() but it's bugged
+        view.update(data.formStr());
     }
 };
 
