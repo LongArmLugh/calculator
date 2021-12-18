@@ -24,6 +24,7 @@ button {
         border: 2px solid currentcolor;
       }
 }
+
 /* This layout would probably have been easier in gridbox */
 
 .card {
@@ -90,6 +91,10 @@ button {
     flex-basis: 0;
 }
 
+.btn:active {
+        border:black solid 2px;
+}
+
 .row .btn:nth-child(1) {
     border-left: 1px solid var(--border);
 }
@@ -105,6 +110,12 @@ button {
 .btn:nth-child(4) {
     background-color: rgb(255, 153, 0);
 }
+
+/* .button:nth-child(4):active {
+    background-color: #3e8e41;
+    box-shadow: 0 5px #666;
+    transform: translateY(4px);
+} */
 
 .row:nth-child(5) .btn:nth-child(3) {
     border-bottom-right-radius: inherit;

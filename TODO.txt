@@ -1,1 +1,7 @@
-> operatorPressEvent -> ospIn => "btn not defined"
+> add totalOp functionality
+> improve view output after an operation is evaluated
+> add second text field for past operations
+> add modulo and negative sign operators
+
+> bug card element makes a border bottom right
+> bug my code

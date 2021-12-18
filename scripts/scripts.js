@@ -16,9 +16,13 @@ function load() {
         const btn = this.textContent;
         if (btn === 'c') {
             clear.press();
+        } else if (btn === '=') {
+            totalOp.press();
+        } else {
+            opsIn.press(btn);
+            // console.log(btn);           
         }
-        opsIn.press(btn);
-        console.log(btn);
+
     }
 
     view.screen = document.getElementById('screenTxt');
@@ -26,6 +30,12 @@ function load() {
 
     const btnList = Array.from(document.querySelectorAll('.btn:not(.operator)'));
     const operatorList = Array.from(document.querySelectorAll('.operator'));
+
+    // Disable btns
+    const hash = operatorList.find(el => el.textContent === '#');
+    const modulo = operatorList.find(el => el.textContent === '%');
+    hash.disabled = true;
+    modulo.disabled = true;
 
     btnList.forEach( item => {
         item.addEventListener('click', numberPressEvent);
@@ -54,7 +64,7 @@ const state = {
             case 'Int':
                 // Everything enabled, period has exceptions -> Ops
                 if (newState === 'Ops') {
-                    zedIn.enable = false;
+                    // zedIn.enable = false;
                     opsIn.enable = false;
                 }
                 this.state = newState;
@@ -62,9 +72,9 @@ const state = {
             case 'Ops':
                 // Only Natural numbers available -> Expression
                 this.expression = true;
-                zedIn.enable = true;
+                // zedIn.enable = true;
                 opsIn.enable = true;
-                total.enable = true;
+                totalOp.enable = true;
                 this.state = newState;
                 break;
             case 'Expression':
@@ -75,12 +85,34 @@ const state = {
                     zedIn.enable = false;
                     opsIn.enable = false;
                     total.enable = false;
+                } 
+                if (newState === 'runningTotal') {
+                    this.expression = false;
+                    numIn.enable = false;
+                    zedIn.enable = false;
+                    opsIn.enable = true;
+                    totalOp.enable = false;
                 }
                 if (newState === 'Start') {
                     this.reset();
                 }
                 this.state = newState;
                 break;
+            case 'equalTotal': {
+                if (newState === 'Int') {
+                    zedIn.enable = true;
+                    opsIn.enable = true;
+                }
+                this.state = newState;
+                break;
+            }
+            case 'runningTotal': {
+                if (newState === 'Int') {
+                    numIn.enable = true;
+                }
+                this.state = newState;
+                break;
+            }
         }
     },
     reset: function() {
@@ -153,12 +185,36 @@ const calculator = {
     },
     // divide
     divide: function(dividend, divisor) {
-        const MESSAGE = 'SNARKY ERROR';
-        return divisor === '0' ? MESSAGE : +dividend / +divisor;
+        if (+divisor === 0) {
+            // TODO dividing by zero will Rickroll you
+            // Message whatever you do, don't divide by zero 
+            alert('Dividing by zero breaks the simulation!');
+            return 'madness';
+            // Timeout magic
+        } else {
+            return +dividend / +divisor;
+        }
     },
     // operate
-    operate: function(operation, a, b) {
-        operation(a, b);
+    operate: function(inputs) {
+        const inputsArr = inputs.join('').split(' ');
+        const operator = inputsArr[1];
+        let total;
+        switch(operator) {
+            case '+':
+                total = this.add(inputsArr[0], inputsArr[2]);
+                break;
+            case '-':
+                total = this.subtract(inputsArr[0], inputsArr[2]);
+                break;
+            case 'x':
+                total = this.multiply(inputsArr[0], inputsArr[2]);
+                break;
+            case '/':
+                total = this.divide(inputsArr[0], inputsArr[2]);
+                break;
+        }
+        return total;
     }
 };
 
@@ -177,6 +233,10 @@ const numIn = {
         if (state.state === 'Start') {
             data.reset();
         }
+        if (state.state === 'equalTotal') {
+            data.reset();
+            state.updateState('Int');
+        } 
         if (this.enable === true) {
             this.setType(btn);
             data.addNumber(btn);
@@ -192,40 +252,69 @@ const numIn = {
 };
 
 const opsIn = { // Operation In
-    // triggers calculation if state == expression
-    // updates data
-    // updates view
-    // updates state
+    // Bug adding the '/' after reset
     type: '', // set on assignment
     enable: false,
     setType: function(btn) {
         this.type = btn;
     },
-    press: function() {
+    press: function(btn) {
         this.setType(btn);
-        if (state.state === 'Expression') {
-            // TODO
-        }
-        if (this.enable === true) {
+        if (state.state === 'Expression' || state.state === 'atTotal') {
+            const total = calculator.operate(data.inputs);
+            if (total === 'madness') { // You divided by zero, you goon!
+                clear.press();
+            } else {
+            data.total = total;
+            data.reset();
+            data.inputs.push(`${total}`);
+            view.update(data.formStr());
+            state.updateState('runningTotal');                
+            }
+        } else if (this.enable === true) {
+            numIn.enable = true;
             data.addOps(this.type);
             view.update(data.formStr());
-        } 
+            state.updateState('Ops');
+        }
     }
 };
 
 const zedIn = {
+    // Should allow after operations
     type: '0',
     enable: false,
     press: function() {
         if (this.enable === true) {
             data.addNumber(this.type);
             view.update(data.inputs.join(''));
+            if (state.state === 'Ops') {
+                state.updateState('Expression');
+            }  
         }
     },
     // TODO
 };
 
-const total = {
+const totalOp = {
+    
+    press: function() {
+        if (state.state === 'Expression') {
+            const total = calculator.operate(data.inputs); // evaluates expression
+            if (total === 'madness') { // You divided by zero, you goon!
+                clear.press();
+            } else {
+            numIn.enable = false;
+            zedIn.enable = false;
+            data.reset();
+            data.total = total;
+            data.inputs.push(`${total}`);
+            view.update(data.formStr());
+            state.updateState('runningTotal');                
+            }
+        }
+    }
+    // should set state to Int
     // update data to total
     // state to total (similar to start)
 };
@@ -235,8 +324,10 @@ const clear = {
     type: 'c',
     // combine into one
     press: function() {
-        state.reset();
         zedIn.enable = false; // Should have been handled by state.reset() but it's bugged
+        data.reset();
+        state.reset();
+        view.reset();
         view.update(data.formStr());
     }
 };
