@@ -1,13 +1,30 @@
-// Get this working on console first calling a control function
-//  called keyPress(key)
-//  then involve the screen
-// load()
+// Starting conditions
+// TODO add 'clear all' button
+function load() {
+
+    state.reset();
+
+    render();
+
+    const keyPressEvent = function() {
+        const key = this.dataset.key;
+        const type = this.dataset.type;
+        check(type, key);
+    };
+
+    const buttons = document.querySelectorAll('.btn');
+
+    // Once loaded eventListeners talk to check which talks to controller
+    buttons.forEach( item => {
+        item.addEventListener('click', keyPressEvent);
+    });   
+}
 // ------------
-function check(key) {
+function check(type, key) {
     // Assumes key matches one of the permit property keys
     // Passes value to controller
-    if (permit[key]) {
-        controller(key);
+    if (permit[type]) {
+        controller(type, key);
     }
 }
 // ------------
@@ -22,7 +39,15 @@ const permit = {
 // ------------
 const state = {
     // Modifies permit object properties
+    phase: null,
+    reset: function() {
+        console.log('LOADING');
+        data.total = 0;
+        data.input = [];
+        state.toStart();   
+    },
     toTotal: function() {
+        this.phase = 'total';
         permit.int = false;
         permit.zed = false;
         permit.dot = false;
@@ -31,6 +56,7 @@ const state = {
         permit.expression = false;
     },
     toStart: function() {
+        this.phase = 'start';
         permit.int = true;
         permit.zed = false;
         permit.dot = true;
@@ -40,6 +66,7 @@ const state = {
     },
     toLeftNum: function() {
         // TODO period special cases
+        this.phase = 'leftNum';
         permit.int = true;
         permit.zed = true;
         permit.dot = true;
@@ -48,6 +75,7 @@ const state = {
         permit.expression = false;
     },
     toOperator: function() {
+        this.phase = 'operator';
         permit.int = true;
         permit.zed = false;
         permit.dot = true;
@@ -57,6 +85,7 @@ const state = {
     }, 
     toRightNum: function() {
         // TODO handle period logic
+        this.phase = 'rightNum';
         permit.int = true;
         permit.zed = true;
         permit.dot = true;
@@ -84,21 +113,26 @@ const state = {
     },  
 }
 // -------------
-function render(str) {
-    console.log(str)
+function render() {  
+    console.table(permit);
+    console.log(`total: ${data.total}`);
+    console.log(`input: ${data.input}`);
+    console.log(`at: ${state.phase}`);
+    console.log(">>>");
+    
 }
 // -------------
 const data = {
-    total: 0,
-    input: '',
+    total: null,
+    input: null,
+    clearInput: function() {
+        this.input.splice(0, this.input.length);
+    }, 
 }
 // --------------
 const calculate = {
-    // TODO old version to be actualized
+    // Call with 'calculate.operate(data.input)'
     // Parses data into total + ops + num by detecting white space
-    // Stores functions for processing data
-    // Resets screen with total as default
-    // add 
     add: function(a, b) {
         return +a + +b;
     },
@@ -115,8 +149,6 @@ const calculate = {
         if (+divisor === 0) {
             // TODO dividing by zero will Rickroll you
             // Message whatever you do, don't divide by zero 
-            alert('Dividing by zero breaks the simulation!');
-            return 'madness';
             // Timeout magic
         } else {
             return +dividend / +divisor;
@@ -145,4 +177,54 @@ const calculate = {
     }
 };
 // --------------
-// controller()
+function controller(type, key) {
+    // handle dot
+    // add input
+    // update state
+    // render
+    console.log('key pressed: ' + key);
+
+    if (state.phase === 'start') {
+        data.input.push(key);
+        state.toLeftNum();
+        render()
+
+    } else if (state.phase === 'leftNum') {
+        if (type === 'ops') {
+            data.input.push(` ${key} `);
+            state.toOperator();
+            render();
+        } else {
+            data.input.push(key);
+            render();
+        }
+
+    } else if (state.phase === 'operator') {
+        data.input.push(key);
+        state.toRightNum();
+        render()
+
+    } else if (state.phase === 'rightNum') {
+        
+        if (type === 'equal') {
+            const total = calculate.operate(data.input);
+            data.total = total;
+            data.clearInput();
+            data.input.push(total);
+            state.toTotal();
+            render();
+
+        } else {
+            data.input.push(key);
+            render();
+        }
+
+    } else if (state.phase === 'total') {
+        data.input.push(` ${key} `);
+        state.toOperator();
+        render();
+    }
+    
+}
+
+load();
