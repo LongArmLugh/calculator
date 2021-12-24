@@ -1,18 +1,17 @@
-// Starting conditions
-// TODO add 'clear all' button
+// TODO 
+//  add 'clear all' button
+//  handle dot logic
 function load() {
+    const buttons = document.querySelectorAll('.btn');
+    view.screenMain = document.getElementById('screenTxt');
 
     state.reset();
-
-    render();
 
     const keyPressEvent = function() {
         const key = this.dataset.key;
         const type = this.dataset.type;
         check(type, key);
     };
-
-    const buttons = document.querySelectorAll('.btn');
 
     // Once loaded eventListeners talk to check which talks to controller
     buttons.forEach( item => {
@@ -21,7 +20,6 @@ function load() {
 }
 // ------------
 function check(type, key) {
-    // Assumes key matches one of the permit property keys
     // Passes value to controller
     if (permit[type]) {
         controller(type, key);
@@ -34,7 +32,8 @@ const permit = {
     dot: false,
     ops: false,
     equal: false,
-    expression: false
+    expression: false,
+    clear: true,
 }
 // ------------
 const state = {
@@ -43,8 +42,9 @@ const state = {
     reset: function() {
         console.log('LOADING');
         data.total = 0;
-        data.input = [];
-        state.toStart();   
+        data.input = ['0'];
+        state.toStart(); 
+        view.render();  
     },
     toTotal: function() {
         this.phase = 'total';
@@ -113,14 +113,21 @@ const state = {
     },  
 }
 // -------------
-function render() {  
-    console.table(permit);
-    console.log(`total: ${data.total}`);
-    console.log(`input: ${data.input}`);
-    console.log(`at: ${state.phase}`);
-    console.log(">>>");
-    
+const view = {
+    // screenMain is set in load()
+    screenMain: null,
+    mainOut: null,
+    render: function() {
+        this.mainOut = data.input.join('');
+        this.screenMain.textContent = this.mainOut;
+        console.table(permit);
+        console.log(`total: ${data.total}`);
+        console.log(`input: ${data.input}`);
+        console.log(`at: ${state.phase}`);
+        console.log(">>>");   
+    }
 }
+
 // -------------
 const data = {
     total: null,
@@ -178,6 +185,10 @@ const calculate = {
 };
 // --------------
 function controller(type, key) {
+    if (type === 'clear') {
+        state.reset();
+        return
+    }
     // handle dot
     // add input
     // update state
@@ -185,24 +196,25 @@ function controller(type, key) {
     console.log('key pressed: ' + key);
 
     if (state.phase === 'start') {
+        data.clearInput();
         data.input.push(key);
         state.toLeftNum();
-        render()
+        view.render()
 
     } else if (state.phase === 'leftNum') {
         if (type === 'ops') {
             data.input.push(` ${key} `);
             state.toOperator();
-            render();
+            view.render();
         } else {
             data.input.push(key);
-            render();
+            view.render();
         }
 
     } else if (state.phase === 'operator') {
         data.input.push(key);
         state.toRightNum();
-        render()
+        view.render()
 
     } else if (state.phase === 'rightNum') {
         
@@ -212,17 +224,17 @@ function controller(type, key) {
             data.clearInput();
             data.input.push(total);
             state.toTotal();
-            render();
+            view.render();
 
         } else {
             data.input.push(key);
-            render();
+            view.render();
         }
 
     } else if (state.phase === 'total') {
         data.input.push(` ${key} `);
         state.toOperator();
-        render();
+        view.render();
     }
     
 }
