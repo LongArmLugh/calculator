@@ -1,6 +1,7 @@
 // TODO 
-//  add 'clear all' button
-//  handle dot logic
+// Sign flip does not apply on rightNum state.
+// resize text to fit screen dynamically
+//  >> https://stackoverflow.com/questions/18229230/dynamically-changing-the-size-of-font-size-based-on-text-length-using-css-and-ht
 function load() {
     const buttons = document.querySelectorAll('.btn');
     view.screenMain = document.getElementById('screenTxt');
@@ -10,6 +11,7 @@ function load() {
     const keyPressEvent = function() {
         const key = this.dataset.key;
         const type = this.dataset.type;
+        console.log(`keypress: ${type}`);
         check(type, key);
     };
 
@@ -22,6 +24,7 @@ function load() {
 function check(type, key) {
     // Passes value to controller
     if (permit[type]) {
+        console.log(`check: ${type}`);
         controller(type, key);
     }
 }
@@ -34,6 +37,7 @@ const permit = {
     equal: false,
     expression: false,
     clear: true,
+    sign: false,
 }
 // ------------
 const state = {
@@ -53,7 +57,6 @@ const state = {
         permit.dot = false;
         permit.ops = true;
         permit.equal = false;
-        permit.expression = false;
     },
     toStart: function() {
         this.phase = 'start';
@@ -62,17 +65,16 @@ const state = {
         permit.dot = true;
         permit.ops = false;
         permit.equal = false;
-        permit.expression = false;
+        permit.sign = false;
     },
     toLeftNum: function() {
-        // TODO period special cases
         this.phase = 'leftNum';
         permit.int = true;
         permit.zed = true;
         permit.dot = true;
         permit.ops = true;
         permit.equal = false;
-        permit.expression = false;
+        permit.sign = true;
     },
     toOperator: function() {
         this.phase = 'operator';
@@ -81,36 +83,17 @@ const state = {
         permit.dot = true;
         permit.ops = false;
         permit.equal = false;
-        permit.expression = false;
+        permit.sign = false;
     }, 
     toRightNum: function() {
-        // TODO handle period logic
         this.phase = 'rightNum';
         permit.int = true;
         permit.zed = true;
         permit.dot = true;
         permit.ops = false;
         permit.equal = true;
-        permit.expression = true;
+        permit.sign = true;
     },
-    toggleDot: function() {
-        // TODO
-        permit.int = false;
-        permit.zed = false;
-        permit.dot = false;
-        permit.ops = false;
-        permit.equal = false;
-        permit.expression = false;
-    }, 
-    toggleZed: function() {
-        // TODO
-        permit.int = false;
-        permit.zed = false;
-        permit.dot = false;
-        permit.ops = false;
-        permit.equal = false;
-        permit.expression = false;
-    },  
 }
 // -------------
 const view = {
@@ -161,6 +144,30 @@ const calculate = {
             return +dividend / +divisor;
         }
     },
+    // Modulo
+    modulo: function(dividend, divisor) {
+        if (+divisor === 0) {
+            // TODO dividing by zero will Rickroll you
+            // Message whatever you do, don't divide by zero 
+            // Timeout magic
+        } else {
+            console.log(`modulo!`);
+            return +dividend % +divisor;
+        }
+    },
+    // Flip sign
+    signFlip: function() {
+        // I should inplement this in operate and allow only during leftNum, rightNum or total states
+        //   as written it only affects the last digit instead of the number itself
+        if ( !+data.input.join('') ) { // Handles '0', '0.', and '0.0...'
+            // i.e. if falsy do nothing
+            return;
+        }
+        let n = data.input.pop();
+        n *= -1;
+        data.input.push(n);
+        console.log(n);
+    },
     // operate
     operate: function(inputs) {
         const inputsArr = inputs.join('').split(' ');
@@ -179,28 +186,60 @@ const calculate = {
             case '/':
                 total = this.divide(inputsArr[0], inputsArr[2]);
                 break;
+            case '%':
+                total = this.modulo(inputsArr[0], inputsArr[2]);
+                break;
         }
         return total;
     }
 };
 // --------------
 function controller(type, key) {
+    // -------------
+    console.log('key pressed: ' + key);
+    // Exceptional Inputs
     if (type === 'clear') {
         state.reset();
         return
     }
+
+    if (type === 'sign') {
+        // TODO call when entering a minus sign at start state
+        calculate.signFlip();
+        view.render();
+        return;
+    }
+
+    // if (type === 'dot') {
+    //     if (state === 'start') {
+    //         data.input.push(`0${key}`);
+    //         state.toLeftNum();
+    //         view.render();
+    //     }
+    // }
     // handle dot
     // add input
     // update state
     // render
-    console.log('key pressed: ' + key);
-
+    //---------------
+    // General Inputs control logic, handles integer inputs, operators and totals
+    //  along with the basic flow of states
     if (state.phase === 'start') {
-        data.clearInput();
-        data.input.push(key);
-        state.toLeftNum();
-        view.render()
-
+        if (type === 'dot') {
+            data.clearInput(); 
+            data.input.push('0');
+            data.input.push('.');
+            state.toLeftNum();
+            permit.dot = false;
+            view.render();
+        } else {
+            data.clearInput(); 
+            data.input.push(key);
+            state.toLeftNum();
+            view.render() 
+        }
+        
+        
     } else if (state.phase === 'leftNum') {
         if (type === 'ops') {
             data.input.push(` ${key} `);
@@ -212,9 +251,18 @@ function controller(type, key) {
         }
 
     } else if (state.phase === 'operator') {
-        data.input.push(key);
-        state.toRightNum();
-        view.render()
+        if (type === 'dot') {
+            data.input.push('0');
+            data.input.push('.');
+            state.toRightNum();
+            permit.dot = false;
+            view.render();
+        } else {
+            data.input.push(key);
+            state.toRightNum();
+            view.render();
+        }
+
 
     } else if (state.phase === 'rightNum') {
         
@@ -226,6 +274,10 @@ function controller(type, key) {
             state.toTotal();
             view.render();
 
+        } else if (type === 'dot') {
+            data.input.push(key);
+            permit.dot = false;
+            view.render();
         } else {
             data.input.push(key);
             view.render();
